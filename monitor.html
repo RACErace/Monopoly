@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,22 +11,26 @@
             padding: 20px;
             background: #f5f5f5;
         }
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
+
         .card {
             background: white;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         .status {
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
         }
+
         .stat-item {
             background: #2e8b57;
             color: white;
@@ -35,40 +40,61 @@
             flex: 1;
             min-width: 150px;
         }
+
         .stat-value {
             font-size: 24px;
             font-weight: bold;
         }
+
         .stat-label {
             font-size: 14px;
             opacity: 0.9;
         }
+
         .history {
             max-height: 400px;
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 5px;
         }
+
         .history-item {
             padding: 10px;
             border-bottom: 1px solid #eee;
             font-family: monospace;
             font-size: 12px;
         }
+
         .history-item:hover {
             background: #f9f9f9;
         }
-        .type-连接成功 { color: #4CAF50; }
-        .type-连接断开 { color: #f44336; }
-        .type-连接拒绝 { color: #ff9800; }
-        .type-主动退出 { color: #2196F3; }
-        .type-警告 { color: #ff5722; }
-        
+
+        .type-连接成功 {
+            color: #4CAF50;
+        }
+
+        .type-连接断开 {
+            color: #f44336;
+        }
+
+        .type-连接拒绝 {
+            color: #ff9800;
+        }
+
+        .type-主动退出 {
+            color: #2196F3;
+        }
+
+        .type-警告 {
+            color: #ff5722;
+        }
+
         .players-list {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
         }
+
         .player-badge {
             background: #e3f2fd;
             color: #1976d2;
@@ -77,19 +103,20 @@
             font-size: 14px;
             border: 1px solid #1976d2;
         }
+
         .player-badge.host {
             background: #fff3e0;
             color: #f57c00;
             border-color: #f57c00;
         }
-        
+
         .auto-refresh {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 20px;
         }
-        
+
         button {
             background: #2e8b57;
             color: white;
@@ -99,24 +126,28 @@
             cursor: pointer;
             font-size: 14px;
         }
+
         button:hover {
             background: #1e5f3a;
         }
+
         button:disabled {
             background: #ccc;
             cursor: not-allowed;
         }
-        
+
         /* 管理员面板样式 */
         .admin-panel {
             border-left: 4px solid #e74c3c;
         }
+
         .admin-actions {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
             margin-top: 15px;
         }
+
         .admin-button {
             background: #e74c3c;
             color: white;
@@ -126,15 +157,19 @@
             cursor: pointer;
             font-size: 12px;
         }
+
         .admin-button:hover {
             background: #c0392b;
         }
+
         .admin-button.danger {
             background: #d32f2f;
         }
+
         .admin-button.danger:hover {
             background: #b71c1c;
         }
+
         .player-admin {
             display: flex;
             align-items: center;
@@ -144,11 +179,13 @@
             border-radius: 5px;
             margin-bottom: 10px;
         }
+
         .player-info {
             display: flex;
             align-items: center;
             gap: 10px;
         }
+
         .kick-button {
             background: #dc3545;
             color: white;
@@ -158,15 +195,17 @@
             cursor: pointer;
             font-size: 11px;
         }
+
         .kick-button:hover {
             background: #c82333;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🎲 大富翁游戏连接监控 🎲</h1>
-        
+
         <div class="auto-refresh">
             <label>
                 <input type="checkbox" id="autoRefresh" checked> 自动刷新 (5秒)
@@ -180,14 +219,15 @@
         <div class="card admin-panel" id="adminPanel" style="display: none;">
             <h3>🔒 管理员控制面板</h3>
             <p style="color: #e74c3c; font-size: 14px;">⚠️ 请谨慎使用管理员功能，这些操作将影响所有玩家！</p>
-            
+
             <div style="margin-bottom: 20px;">
                 <h4>服务器状态</h4>
-                <div id="serverStatus" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;">
+                <div id="serverStatus"
+                    style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;">
                     <!-- 服务器状态将通过JS填充 -->
                 </div>
             </div>
-            
+
             <div style="margin-bottom: 20px;">
                 <h4>全局操作</h4>
                 <div class="admin-actions">
@@ -196,7 +236,7 @@
                     <button class="admin-button" onclick="window.open('/admin/status', '_blank')">查看API状态</button>
                 </div>
             </div>
-            
+
             <div>
                 <h4>玩家管理</h4>
                 <div id="adminPlayersList">
@@ -235,7 +275,7 @@
         function toggleAdminPanel() {
             const panel = document.getElementById('adminPanel');
             const toggle = document.getElementById('adminToggle');
-            
+
             adminPanelVisible = !adminPanelVisible;
             panel.style.display = adminPanelVisible ? 'block' : 'none';
             toggle.textContent = adminPanelVisible ? '隐藏管理员面板' : '显示管理员面板';
@@ -245,14 +285,14 @@
         async function kickPlayer(playerName) {
             if (confirm(`确定要踢出玩家 "${playerName}" 吗？\n\n该玩家将被强制断开连接。`)) {
                 try {
-                    const response = await fetch(`/admin/kick/${playerName}`, { 
+                    const response = await fetch(`/admin/kick/${playerName}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         }
                     });
                     const result = await response.json();
-                    
+
                     if (response.ok) {
                         alert(`成功踢出玩家: ${result.message}`);
                         await refreshData();
@@ -269,14 +309,14 @@
         async function resetGame() {
             if (confirm('⚠️ 确定要重置游戏状态吗？\n\n这将：\n• 断开所有玩家连接\n• 清除游戏数据\n• 重置房主设置\n\n此操作不可撤销！')) {
                 try {
-                    const response = await fetch('/admin/reset', { 
+                    const response = await fetch('/admin/reset', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         }
                     });
                     const result = await response.json();
-                    
+
                     if (response.ok) {
                         alert(`游戏状态已重置: ${result.message}`);
                         await refreshData();
@@ -304,7 +344,7 @@
             const statusDiv = document.getElementById('status');
             const conn = data.current_connections;
             const stats = data.statistics;
-            
+
             statusDiv.innerHTML = `
                 <div class="stat-item">
                     <div class="stat-value">${conn.total}</div>
@@ -332,12 +372,12 @@
         function updatePlayersList(data) {
             const playersDiv = document.getElementById('playersList');
             const conn = data.current_connections;
-            
+
             if (conn.players.length === 0) {
                 playersDiv.innerHTML = '<div style="color: #666; font-style: italic;">暂无在线玩家</div>';
                 return;
             }
-            
+
             playersDiv.innerHTML = conn.players.map(player => {
                 const isHost = player === conn.host_player;
                 const ip = conn.player_ips[player] || 'unknown';
@@ -350,12 +390,12 @@
         function updateAdminPlayersList(data) {
             const adminPlayersDiv = document.getElementById('adminPlayersList');
             const conn = data.current_connections;
-            
+
             if (conn.players.length === 0) {
                 adminPlayersDiv.innerHTML = '<div style="color: #666; font-style: italic;">暂无在线玩家</div>';
                 return;
             }
-            
+
             adminPlayersDiv.innerHTML = conn.players.map(player => {
                 const isHost = player === conn.host_player;
                 const ip = conn.player_ips[player] || 'unknown';
@@ -374,7 +414,7 @@
             const serverStatusDiv = document.getElementById('serverStatus');
             const conn = data.current_connections;
             const stats = data.statistics;
-            
+
             serverStatusDiv.innerHTML = `
                 游戏状态: ${conn.game_started ? '<span style="color: #4CAF50;">进行中</span>' : '<span style="color: #ff9800;">等待中</span>'}
                 <br>房主: ${conn.host_player || '<span style="color: #666;">无</span>'}
@@ -388,12 +428,12 @@
         function updateHistory(data) {
             const historyDiv = document.getElementById('history');
             const history = data.connection_history;
-            
+
             if (history.length === 0) {
                 historyDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">暂无连接历史</div>';
                 return;
             }
-            
+
             historyDiv.innerHTML = history.slice().reverse().map(event => {
                 const typeClass = `type-${event.type}`;
                 return `<div class="history-item ${typeClass}">
@@ -415,7 +455,7 @@
                 updateAdminPlayersList(data);
                 updateServerStatus(data);
                 updateHistory(data);
-                
+
                 const now = new Date().toLocaleTimeString();
                 document.getElementById('lastUpdate').textContent = `最后更新: ${now}`;
             } else {
@@ -425,7 +465,7 @@
 
         function startAutoRefresh() {
             if (autoRefreshTimer) return;
-            
+
             autoRefreshTimer = setInterval(async () => {
                 const checkbox = document.getElementById('autoRefresh');
                 if (checkbox.checked) {
@@ -449,7 +489,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await refreshData();
             startAutoRefresh();
-            
+
             // 监听自动刷新开关
             document.getElementById('autoRefresh').addEventListener('change', (e) => {
                 if (e.target.checked) {
@@ -473,4 +513,5 @@
         });
     </script>
 </body>
+
 </html>

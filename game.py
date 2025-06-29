@@ -161,7 +161,7 @@ class EventCard:
         # 随机选择一张卡片
         description, effect = random.choice(chance_cards)
         effect(player)
-        return f"{self.card_type}: {description}"
+        return description
     
     def _trigger_community_card(self, player: Player):
         """触发命运卡片效果"""
@@ -176,7 +176,7 @@ class EventCard:
             ("您中了二等奖，收取 $10", lambda p: setattr(p, 'money', p.money + 10)),
             ("您已被选为主席，向每位玩家支付 $50", lambda p: setattr(p, 'money', max(0, p.money - 150))),  # 简化处理
             ("从银行错误中收取 $200", lambda p: setattr(p, 'money', p.money + 200)),
-            ("医生费用，支付 $50", lambda p: setattr(p, 'money', max(0, p.money - 50))),
+            ("医生费用 $50", lambda p: setattr(p, 'money', max(0, p.money - 50))),
             ("学校税 $150", lambda p: setattr(p, 'money', max(0, p.money - 150))),
             ("房屋维修，每栋房屋 $40", pay_building_maintenance_40),
         ]
@@ -184,7 +184,7 @@ class EventCard:
         # 随机选择一张卡片
         description, effect = random.choice(community_cards)
         effect(player)
-        return f"{self.card_type}: {description}"
+        return description
 
     def to_dict(self):
         return {
@@ -231,8 +231,8 @@ class Board:
                  "country32":{"cost": [32, 33, 34, 35], "rent": [32, 33, 34, 35], "mortgage_value": 1, "selling_price": 2},
                  "country33":{"cost": [33, 34, 35, 36], "rent": [33, 34, 35, 36], "mortgage_value": 1, "selling_price": 2},
                  "country34":{"cost": [34, 35, 36, 37], "rent": [34, 35, 36, 37], "mortgage_value": 1, "selling_price": 2}}
-        self.game_map = ["起点", "country1", "country2", "country3", "country4",
-                "机遇", "country5", "命运", "country6", "country7",
+        self.game_map = ["起点", "机遇", "机遇", "机遇", "机遇",
+                "机遇", "机遇", "机遇", "机遇", "机遇",
                 "country8", "机遇", "country9", "country10", "country11",
                 "country12", "country13", "country14", "country15",
                 "country16", "country17", "country18", "country19",
@@ -266,6 +266,7 @@ class Game:
         self.current_player_index = 0
         self.last_roll = 0
         self.pending_action = None
+        self.has_rolled_this_turn = False  # 跟踪当前回合是否已掷骰子
 
     def roll_dice(self):
         d1, d2 = random.randint(1, 6), random.randint(1, 6)
@@ -276,6 +277,17 @@ class Game:
         return self.players[self.current_player_index]
 
     def play_turn_network(self, dice_total: int) -> Dict[str, Any]:
+        # 检查当前玩家是否已经掷过骰子
+        if self.has_rolled_this_turn:
+            return {
+                "error": "本回合已经掷过骰子",
+                "player": self.get_current_player().name,
+                "message": "请等待完成当前回合的操作或结束回合"
+            }
+        
+        # 标记已掷骰子
+        self.has_rolled_this_turn = True
+        
         player = self.get_current_player()
 
         result = {"player": player.name, "dice_total": dice_total, "events": []}
@@ -305,7 +317,7 @@ class Game:
                     self.next_player()
         elif isinstance(tile, EventCard):
             desc = tile.trigger(player)
-            result["events"].append(desc)
+            result["events"]= desc
             # 处理特殊的全体玩家支付效果
             if "向每位玩家支付" in desc:
                 amount = 50  # 从描述中提取金额
@@ -474,6 +486,7 @@ class Game:
     def next_player(self):
         """切换到下一个玩家"""
         self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        self.has_rolled_this_turn = False  # 重置掷骰子状态
         # 跳过已破产的玩家（money <= 0 且没有资产）
         attempts = 0
         while attempts < len(self.players):
@@ -494,3 +507,16 @@ class Game:
         if len(active_players) == 1:
             return active_players[0]
         return max(self.players, key=lambda p: p.get_total_asset_value())
+
+    def get_game_state(self) -> Dict[str, Any]:
+        """获取完整的游戏状态，包括掷骰子状态"""
+        return {
+            "players": [p.to_dict() for p in self.players],
+            "properties": [t.to_dict() for t in self.board.tiles if hasattr(t, 'to_dict')],
+            "current_player": self.get_current_player().name,
+            "has_rolled_this_turn": self.has_rolled_this_turn,
+            "pending_action": self.pending_action,
+            "last_roll": self.last_roll,
+            "game_over": self.is_game_over(),
+            "winner": self.get_winner().name if self.is_game_over() else None
+        }

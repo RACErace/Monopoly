@@ -151,13 +151,9 @@ async def websocket_endpoint(websocket: WebSocket, player_name: str):
     # 如果是游戏中玩家重连，发送当前游戏状态
     if game_started and game:
         try:
-            game_state = {
-                "type": "game_reconnect",
-                "players": [p.to_dict() for p in game.players],
-                "properties": [t.to_dict() for t in game.board.tiles if hasattr(t, 'to_dict')],
-                "current_player": game.get_current_player().name,
-                "message": f"欢迎回来，{player_name}！游戏正在进行中"
-            }
+            game_state = game.get_game_state()
+            game_state["type"] = "game_reconnect"
+            game_state["message"] = f"欢迎回来，{player_name}！游戏正在进行中"
             await websocket.send_json(game_state)
             log_connection_event("游戏状态发送", player_name, "已发送当前游戏状态", client_ip)
         except Exception as e:
@@ -209,21 +205,39 @@ async def websocket_endpoint(websocket: WebSocket, player_name: str):
                 game_started = True  # 设置游戏已开始标志
                 
                 # 发送游戏开始消息，包含初始游戏状态
-                initial_state = {
-                    "type": "game_started", 
-                    "players": [p.to_dict() for p in game.players],
-                    "properties": [t.to_dict() for t in game.board.tiles if hasattr(t, 'to_dict')],
-                    "current_player": game.get_current_player().name
-                }
+                initial_state = game.get_game_state()
+                initial_state["type"] = "game_started"
                 await broadcast(initial_state)
 
             elif action == "roll_dice":
                 if game and game.get_current_player().name == player_name:
+                    # 检查是否已经掷过骰子
+                    if game.has_rolled_this_turn:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "本回合已经掷过骰子，请完成当前操作或结束回合"
+                        })
+                        continue
+                    
                     d1, d2 = game.roll_dice()
-                    result = game.play_turn_network(d1 + d2)
+                    result = game.play_turn_network(1)
+                    
+                    # 检查是否有错误
+                    if "error" in result:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": result["error"]
+                        })
+                        continue
+                    
                     result["type"] = "turn_result"
                     result["dice_values"] = [d1, d2]  # 添加单独的骰子值
                     await broadcast(result)
+                else:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "不是您的回合"
+                    })
 
             elif action == "buy_property":
                 if game and game.get_current_player().name == player_name:
@@ -231,6 +245,7 @@ async def websocket_endpoint(websocket: WebSocket, player_name: str):
                     result["type"] = "buy_result"
                     # 添加当前玩家信息，因为购买后会切换到下一位玩家
                     result["current_player"] = game.get_current_player().name
+                    result["has_rolled_this_turn"] = game.has_rolled_this_turn
                     await broadcast(result)
 
             elif action == "upgrade_property":
@@ -239,6 +254,7 @@ async def websocket_endpoint(websocket: WebSocket, player_name: str):
                     result["type"] = "upgrade_result"
                     # 添加当前玩家信息，因为升级后会切换到下一位玩家
                     result["current_player"] = game.get_current_player().name
+                    result["has_rolled_this_turn"] = game.has_rolled_this_turn
                     await broadcast(result)
 
             elif action == "mortgage_property":
@@ -276,12 +292,13 @@ async def websocket_endpoint(websocket: WebSocket, player_name: str):
                     # 检查是否是当前玩家
                     current_player = game.get_current_player()
                     if current_player.name == player_name:
-                        game.next_player()
+                        game.next_player()  # next_player 方法已经包含重置掷骰子状态
                         new_current_player = game.get_current_player()
                         result = {
                             "type": "turn_ended",
                             "player": player_name,
                             "current_player": new_current_player.name,
+                            "has_rolled_this_turn": game.has_rolled_this_turn,
                             "events": [f"{player_name} 主动结束了回合，轮到 {new_current_player.name}"],
                             "players": [p.to_dict() for p in game.players],
                             "properties": [t.to_dict() for t in game.board.tiles if hasattr(t, 'to_dict')]
