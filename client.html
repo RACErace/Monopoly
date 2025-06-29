@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大富翁联机版</title>
+  <style>
+    body {
+      font-family: "微软雅黑", sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    #board {
+      width: 800px;
+      height: 800px;
+      margin: 20px auto;
+      position: relative;
+      background: #2e8b57;
+      border: 10px solid #8b4513;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .tile {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 2px solid #333;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 10px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(145deg, #ffffff, #f0f0f0);
+      text-align: center;
+      padding: 4px;
+    }
+
+    .tile:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    /* 角落特殊格子 */
+    .corner-tile {
+      position: absolute;
+      width: 100px !important;
+      height: 100px !important;
+      border: 2px solid #333;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      font-size: 12px !important;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(45deg, #ffd700, #ffed4e) !important;
+      padding: 4px;
+    }
+
+    /* 右边 */
+    .right-edge {
+      right: 10px;
+    }
+
+    .right-0 {
+      top: 10px;
+    }
+
+    /* 右上角 */
+    .right-1 {
+      top: 120px;
+    }
+
+    .right-2 {
+      top: 210px;
+    }
+
+    .right-3 {
+      top: 300px;
+    }
+
+    .right-4 {
+      top: 390px;
+    }
+
+    .right-5 {
+      top: 480px;
+    }
+
+    .right-6 {
+      top: 570px;
+    }
+
+    /* 底边 */
+    .bottom-edge {
+      bottom: 10px;
+    }
+
+    .bottom-0 {
+      right: 10px;
+    }
+
+    /* 右下角 */
+    .bottom-1 {
+      right: 120px;
+    }
+
+    .bottom-2 {
+      right: 210px;
+    }
+
+    .bottom-3 {
+      right: 300px;
+    }
+
+    .bottom-4 {
+      right: 390px;
+    }
+
+    .bottom-5 {
+      right: 480px;
+    }
+
+    .bottom-6 {
+      right: 570px;
+    }
+
+    /* 左边 */
+    .left-edge {
+      left: 10px;
+    }
+
+    .left-0 {
+      bottom: 10px;
+    }
+
+    /* 左下角 */
+    .left-1 {
+      bottom: 120px;
+    }
+
+    .left-2 {
+      bottom: 210px;
+    }
+
+    .left-3 {
+      bottom: 300px;
+    }
+
+    .left-4 {
+      bottom: 390px;
+    }
+
+    .left-5 {
+      bottom: 480px;
+    }
+
+    .left-6 {
+      bottom: 570px;
+    }
+
+    /* 顶边 */
+    .top-edge {
+      top: 10px;
+    }
+
+    .top-0 {
+      left: 10px;
+    }
+
+    /* 左上角 */
+    .top-1 {
+      left: 120px;
+    }
+
+    .top-2 {
+      left: 210px;
+    }
+
+    .top-3 {
+      left: 300px;
+    }
+
+    .top-4 {
+      left: 390px;
+    }
+
+    .top-5 {
+      left: 480px;
+    }
+
+    .top-6 {
+      left: 570px;
+    }
+
+    .player-token {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      font-weight: bold;
+      font-size: 10px;
+      color: #000;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 1px 3px;
+      border-radius: 3px;
+      min-width: 15px;
+      text-align: center;
+    }
+
+    .property-name {
+      font-weight: bold;
+      font-size: 9px;
+      margin-bottom: 2px;
+      color: #333;
+    }
+
+    .property-info {
+      font-size: 8px;
+      line-height: 1.1;
+      color: #666;
+    }
+
+    .property-price {
+      font-weight: bold;
+      color: #2e8b57;
+      font-size: 9px;
+    }
+
+    .houses-indicator {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      font-size: 8px;
+      background: #4CAF50;
+      color: white;
+      padding: 1px 3px;
+      border-radius: 2px;
+    }
+
+    /* 中央游戏信息区域 */
+    #game-center {
+      position: absolute;
+      top: 150px;
+      left: 150px;
+      width: 500px;
+      height: 500px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 20px;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #game-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2e8b57;
+      margin-bottom: 20px;
+    }
+
+    #current-player {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    #player-stats {
+      margin-top: 20px;
+      text-align: left;
+      width: 100%;
+    }
+
+    .player-stat {
+      margin: 5px 0;
+      padding: 5px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #controls {
+      margin: 20px auto;
+      text-align: center;
+      max-width: 800px;
+    }
+
+    button {
+      font-size: 14px;
+      margin-right: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+
+    #log {
+      white-space: pre-line;
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-top: 15px;
+      height: 200px;
+      overflow-y: auto;
+      background: #fff;
+      box-shadow: inset 0 0 5px #ddd;
+    }
+
+    #dice-container {
+      perspective: 600px;
+      width: 150px;
+      height: 60px;
+      margin: 10px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .dice {
+      width: 60px;
+      height: 60px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 1s ease-out;
+      cursor: pointer;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .face {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background: white;
+      border: 2px solid #333;
+      border-radius: 8px;
+      font-size: 28px;
+      text-align: center;
+      line-height: 60px;
+      font-weight: bold;
+      -webkit-user-select: none;
+      user-select: none;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .face1 {
+      transform: rotateY(0deg) translateZ(30px);
+    }
+
+    .face2 {
+      transform: rotateY(90deg) translateZ(30px);
+    }
+
+    .face3 {
+      transform: rotateY(180deg) translateZ(30px);
+    }
+
+    .face4 {
+      transform: rotateY(-90deg) translateZ(30px);
+    }
+
+    .face5 {
+      transform: rotateX(90deg) translateZ(30px);
+    }
+
+    .face6 {
+      transform: rotateX(-90deg) translateZ(30px);
+    }
+
+    /* 玩家列表样式 */
+    .player-card {
+      background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      min-width: 120px;
+    }
+
+    .player-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    .player-color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #333;
+    }
+
+    .player-host-badge {
+      background: #ffd700;
+      color: #333;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: auto;
+    }
+
+    .player-status {
+      font-size: 10px;
+      color: #666;
+      margin-left: auto;
+    }
+
+    /* 房间等待页面样式 */
+    #lobby-page button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+
+    #lobby-page input:focus {
+      border-color: #2e8b57;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.1);
+    }
+
+    /* 游戏控制按钮样式 */
+    #controls button {
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #2e8b57;
+      color: white;
+    }
+
+    #controls button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      background: #245f3e;
+    }
+
+    #controls button:active {
+      transform: translateY(0);
+    }
+
+    /* 结束回合按钮特殊样式 */
+    #controls button[onclick="endTurn()"] {
+      background: #f39c12;
+      border: 2px solid #e67e22;
+    }
+
+    #controls button[onclick="endTurn()"]:hover {
+      background: #e67e22;
+      border-color: #d35400;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- 房间等待页面 -->
+  <div id="lobby-page" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); max-width: 600px; width: 90%; text-align: center;">
+      <h1 style="color: #2e8b57; margin-bottom: 30px; font-size: 2.5em;">🎲 大富翁联机版 🎲</h1>
+      
+      <!-- 加入房间区域 -->
+      <div id="join-section">
+        <div style="margin-bottom: 20px;">
+          <label for="name" style="display: block; margin-bottom: 10px; font-weight: bold; color: #333;">玩家名字：</label>
+          <input id="name" placeholder="输入你的名字" autocomplete="name" 
+                 style="width: 60%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; text-align: center;" />
+        </div>
+        <button type="button" onclick="connect()" 
+                style="background: #2e8b57; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; transition: all 0.3s ease;">
+          加入房间
+        </button>
+      </div>
+
+      <!-- 退出房间区域 -->
+      <div id="leave-section" style="display: none; margin-bottom: 20px;">
+        <button type="button" onclick="leaveRoom()" 
+                style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.3s ease;">
+          退出房间
+        </button>
+      </div>
+
+      <!-- 玩家列表区域 -->
+      <div id="player-list-container" style="display: none; margin-top: 30px;">
+        <h3 style="margin: 0 0 20px 0; color: #2e8b57; border-bottom: 2px solid #2e8b57; padding-bottom: 10px;">房间玩家列表</h3>
+        
+        <!-- 颜色选择区域 -->
+        <div id="color-selection-container" style="margin-bottom: 20px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+          <h4 style="margin: 0 0 10px 0; color: #2e8b57;">选择你的颜色</h4>
+          <div id="color-options" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"></div>
+          <div id="selected-color-info" style="margin-top: 10px; font-size: 14px; color: #666; text-align: center;"></div>
+        </div>
+        
+        <div id="player-list" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-bottom: 20px;"></div>
+        <div id="room-status" style="font-size: 14px; color: #666; margin-bottom: 20px;"></div>
+        
+        <!-- 开始游戏按钮 -->
+        <button type="button" id="start-game-btn" onclick="startGame()" style="display: none; background: #e74c3c; color: white; border: none; padding: 15px 40px; border-radius: 8px; font-size: 18px; cursor: pointer; font-weight: bold; transition: all 0.3s ease;">
+          开始游戏
+        </button>
+        
+        <div style="margin-top: 15px; color: #888; font-size: 14px;">
+          <p>等待房主开始游戏...</p>
+          <p>最少2人，最多6人可以开始游戏</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 游戏主界面 -->
+  <div id="game-page" style="display: none;">
+    <div id="controls">
+      <button type="button" onclick="rollDice()">掷骰子</button>
+      <button type="button" onclick="buy()">购买地产</button>
+      <button type="button" onclick="upgrade()">升级房屋</button>
+      <button type="button" onclick="showFinancialOptions()">财务管理</button>
+      <button type="button" onclick="endTurn()" style="background: #f39c12; color: white;">结束回合</button>
+      <button type="button" onclick="showLobby()" style="background: #e74c3c; color: white;">返回房间</button>
+    </div>
+
+  <!-- 财务管理模态框 -->
+  <div id="financial-modal"
+    style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div
+      style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border-radius:10px; max-width:600px; width:90%;">
+      <h3>财务管理</h3>
+      <div id="financial-content">
+        <div>
+          <h4>可抵押的地块:</h4>
+          <div id="mortgageable-list"></div>
+        </div>
+        <div>
+          <h4>可赎回的地块:</h4>
+          <div id="redeemable-list"></div>
+        </div>
+        <div>
+          <h4>可出售的地块:</h4>
+          <div id="sellable-list"></div>
+        </div>
+      </div>
+      <button onclick="closeFinancialModal()">关闭</button>
+    </div>
+  </div>
+
+  <div id="board">
+    <!-- 中央游戏信息区域 -->
+    <div id="game-center">
+      <div id="game-title">🎲 大富翁联机版 🎲</div>
+      <div id="current-player">欢迎来到大富翁游戏！</div>
+      <div id="dice-container">
+        <div id="dice1" class="dice" onclick="rollDice()">
+          <div class="face face1">1</div>
+          <div class="face face2">2</div>
+          <div class="face face3">3</div>
+          <div class="face face4">4</div>
+          <div class="face face5">5</div>
+          <div class="face face6">6</div>
+        </div>
+        <div id="dice2" class="dice" onclick="rollDice()">
+          <div class="face face1">1</div>
+          <div class="face face2">2</div>
+          <div class="face face3">3</div>
+          <div class="face face4">4</div>
+          <div class="face face5">5</div>
+          <div class="face face6">6</div>
+        </div>
+      </div>
+      <div id="player-stats"></div>
+    </div>
+  </div>
+
+    <div id="log"></div>
+  </div>
+
+  <script>
+    let ws, currentPlayer = null, gameData = null, isHost = false, roomPlayers = [], gameStarted = false;
+    let playerColors = {}, availableColors = [], selectedColor = null;
+    // 预定义最多6名玩家的颜色映射
+    const predefinedColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd'];
+    // 骰子6面对应旋转角度 (X，Y)
+    const diceRotations = {
+      1: { x: 0, y: 0 },
+      2: { x: 0, y: -90 },
+      3: { x: 0, y: 180 },
+      4: { x: 0, y: 90 },
+      5: { x: 90, y: 0 },
+      6: { x: -90, y: 0 }
+    };
+
+    // 棋盘位置映射 - 从服务器动态获取
+    let boardPositions = [];
+
+    // 棋盘位置CSS类映射 - 预定义28个位置的CSS类
+    const positionClasses = [
+      'corner-tile right-edge right-0',  // 0 - 右上角
+      'tile right-edge right-1',         // 1
+      'tile right-edge right-2',         // 2
+      'tile right-edge right-3',         // 3
+      'tile right-edge right-4',         // 4
+      'tile right-edge right-5',         // 5
+      'tile right-edge right-6',         // 6
+      'corner-tile bottom-edge bottom-0', // 7 - 右下角
+      'tile bottom-edge bottom-1',        // 8
+      'tile bottom-edge bottom-2',        // 9
+      'tile bottom-edge bottom-3',        // 10
+      'tile bottom-edge bottom-4',        // 11
+      'tile bottom-edge bottom-5',        // 12
+      'tile bottom-edge bottom-6',        // 13
+      'corner-tile left-edge left-0',     // 14 - 左下角
+      'tile left-edge left-1',            // 15
+      'tile left-edge left-2',            // 16
+      'tile left-edge left-3',            // 17
+      'tile left-edge left-4',            // 18
+      'tile left-edge left-5',            // 19
+      'tile left-edge left-6',            // 20
+      'corner-tile top-edge top-0',       // 21 - 左上角
+      'tile top-edge top-1',              // 22
+      'tile top-edge top-2',              // 23
+      'tile top-edge top-3',              // 24
+      'tile top-edge top-4',              // 25
+      'tile top-edge top-5',              // 26
+      'tile top-edge top-6'               // 27
+    ];
+
+    // 异步获取棋盘数据
+    async function loadBoardData() {
+      try {
+        const host = window.location.hostname || 'localhost';
+        const port = window.location.port || '8000';
+        const response = await fetch(`http://${host}:${port}/api/board-data`);
+        const data = await response.json();
+        
+        // 将服务器数据映射到前端格式
+        boardPositions = data.board_data.map((tile, index) => ({
+          pos: positionClasses[index] || 'tile',
+          name: tile.name,
+          prices: tile.price,
+          special: tile.special || (tile.name === '起点' || index === 0 || index === 7 || index === 14 || index === 21)
+        }));
+        
+        log("棋盘数据加载完成");
+        // 初始化棋盘显示
+        initializeBoard();
+      } catch (error) {
+        console.error("加载棋盘数据失败:", error);
+        log("加载棋盘数据失败，使用默认数据");
+        // 使用默认数据作为后备
+        boardPositions = Array.from({length: 28}, (_, i) => ({
+          pos: positionClasses[i] || 'tile',
+          name: `位置${i}`,
+          prices: 100,
+          special: i === 0 || i === 7 || i === 14 || i === 21
+        }));
+        initializeBoard();
+      }
+    }
+
+    function log(msg) {
+      const logDiv = document.getElementById('log');
+      logDiv.textContent += msg + "\n";
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    // 颜色选择相关函数
+    function chooseColor(color) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      
+      ws.send(JSON.stringify({
+        action: "choose_color",
+        color: color
+      }));
+    }
+
+    function renderColorOptions(availableColorsList, playerColorMap) {
+      const colorOptionsDiv = document.getElementById('color-options');
+      const selectedColorInfo = document.getElementById('selected-color-info');
+      
+      if (!colorOptionsDiv) return;
+      
+      colorOptionsDiv.innerHTML = '';
+      
+      // 显示当前玩家已选择的颜色
+      if (playerColorMap[currentPlayer]) {
+        selectedColor = playerColorMap[currentPlayer];
+        selectedColorInfo.innerHTML = `✅ 您已选择颜色: <span style="display: inline-block; width: 20px; height: 20px; background: ${selectedColor}; border-radius: 50%; border: 2px solid #333; vertical-align: middle; margin-left: 5px;"></span>`;
+      } else {
+        selectedColorInfo.textContent = '请选择一个颜色';
+      }
+      
+      // 渲染颜色选项
+      predefinedColors.forEach(color => {
+        const colorOption = document.createElement('div');
+        colorOption.style.width = '40px';
+        colorOption.style.height = '40px';
+        colorOption.style.borderRadius = '50%';
+        colorOption.style.backgroundColor = color;
+        colorOption.style.border = '3px solid #333';
+        colorOption.style.cursor = 'pointer';
+        colorOption.style.transition = 'all 0.3s ease';
+        colorOption.style.display = 'flex';
+        colorOption.style.alignItems = 'center';
+        colorOption.style.justifyContent = 'center';
+        colorOption.style.fontSize = '16px';
+        
+        // 检查颜色状态
+        const isOwned = Object.values(playerColorMap).includes(color);
+        const isMyColor = playerColorMap[currentPlayer] === color;
+        const isAvailable = availableColorsList.includes(color);
+        
+        if (isMyColor) {
+          colorOption.innerHTML = '✓';
+          colorOption.style.color = 'white';
+          colorOption.style.borderColor = '#2e8b57';
+          colorOption.style.borderWidth = '4px';
+          colorOption.style.transform = 'scale(1.1)';
+        } else if (isOwned) {
+          colorOption.innerHTML = '✗';
+          colorOption.style.color = 'white';
+          colorOption.style.opacity = '0.5';
+          colorOption.style.cursor = 'not-allowed';
+          // 显示占用者
+          const owner = Object.keys(playerColorMap).find(player => playerColorMap[player] === color);
+          colorOption.title = `已被 ${owner} 选择`;
+        } else if (isAvailable) {
+          colorOption.onclick = () => chooseColor(color);
+          colorOption.onmouseover = () => {
+            colorOption.style.transform = 'scale(1.2)';
+            colorOption.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+          };
+          colorOption.onmouseout = () => {
+            colorOption.style.transform = 'scale(1)';
+            colorOption.style.boxShadow = 'none';
+          };
+          colorOption.title = '点击选择此颜色';
+        }
+        
+        colorOptionsDiv.appendChild(colorOption);
+      });
+    }
+
+    // 页面切换函数
+    function showLobby() {
+      document.getElementById('lobby-page').style.display = 'flex';
+      document.getElementById('game-page').style.display = 'none';
+      gameStarted = false;
+    }
+
+    function showGame() {
+      document.getElementById('lobby-page').style.display = 'none';
+      document.getElementById('game-page').style.display = 'block';
+      gameStarted = true;
+      
+      // 游戏开始后立即更新游戏中心显示
+      const currentPlayerDiv = document.getElementById('current-player');
+      if (gameData && gameData.current_player) {
+        currentPlayerDiv.textContent = `当前玩家: ${gameData.current_player}`;
+      } else if (gameData && gameData.players && gameData.players.length > 0) {
+        // 如果没有指定当前玩家，默认使用第一个玩家
+        const firstPlayer = gameData.players[0].name || gameData.players[0];
+        currentPlayerDiv.textContent = `当前玩家: ${firstPlayer}`;
+      } else {
+        currentPlayerDiv.textContent = '游戏已开始';
+      }
+      
+      // 游戏开始后初始化棋盘和玩家状态
+      if (gameData) {
+        if (gameData.players && gameData.properties) {
+          renderBoard(gameData.players, gameData.properties);
+        }
+        if (gameData.players) {
+          updatePlayerStats(gameData.players);
+        }
+      } else {
+        initializeBoard();
+      }
+    }
+
+    function updatePlayerList(players, hostPlayer, playerColorMap = {}, availableColorsList = []) {
+      roomPlayers = players;
+      isHost = hostPlayer === currentPlayer;
+      playerColors = playerColorMap;
+      availableColors = availableColorsList;
+
+      // 只在房间等待页面更新玩家列表
+      if (!gameStarted) {
+        const container = document.getElementById('player-list-container');
+        const playerList = document.getElementById('player-list');
+        const roomStatus = document.getElementById('room-status');
+        const startGameBtn = document.getElementById('start-game-btn');
+
+        // 显示玩家列表容器
+        container.style.display = 'block';
+
+        // 渲染颜色选择选项
+        renderColorOptions(availableColorsList, playerColorMap);
+
+        // 清空现有列表
+        playerList.innerHTML = '';
+
+        // 添加每个玩家
+        players.forEach((player, index) => {
+          const playerCard = document.createElement('div');
+          playerCard.className = 'player-card';
+          playerCard.style.background = 'linear-gradient(145deg, #f8f9fa, #e9ecef)';
+          playerCard.style.border = '2px solid #ddd';
+          playerCard.style.borderRadius = '12px';
+          playerCard.style.padding = '15px 20px';
+          playerCard.style.display = 'flex';
+          playerCard.style.alignItems = 'center';
+          playerCard.style.gap = '12px';
+          playerCard.style.fontSize = '16px';
+          playerCard.style.fontWeight = 'bold';
+          playerCard.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.1)';
+          playerCard.style.transition = 'all 0.3s ease';
+          playerCard.style.minWidth = '140px';
+
+          const colorDot = document.createElement('div');
+          colorDot.style.width = '16px';
+          colorDot.style.height = '16px';
+          colorDot.style.borderRadius = '50%';
+          colorDot.style.border = '2px solid #333';
+          // 使用玩家选择的颜色，如果没有选择则使用默认颜色
+          const playerColor = playerColorMap[player] || predefinedColors[index] || '#cccccc';
+          colorDot.style.backgroundColor = playerColor;
+
+          const playerName = document.createElement('span');
+          playerName.textContent = player;
+
+          playerCard.appendChild(colorDot);
+          playerCard.appendChild(playerName);
+
+          // 如果玩家没有选择颜色，显示提示
+          if (!playerColorMap[player]) {
+            const noColorBadge = document.createElement('span');
+            noColorBadge.style.background = '#ff9800';
+            noColorBadge.style.color = 'white';
+            noColorBadge.style.fontSize = '10px';
+            noColorBadge.style.padding = '2px 6px';
+            noColorBadge.style.borderRadius = '10px';
+            noColorBadge.style.marginLeft = 'auto';
+            noColorBadge.textContent = '未选色';
+            playerCard.appendChild(noColorBadge);
+          } else if (player === hostPlayer) {
+            // 如果是房主，添加房主标识
+            const hostBadge = document.createElement('span');
+            hostBadge.style.background = '#ffd700';
+            hostBadge.style.color = '#333';
+            hostBadge.style.fontSize = '12px';
+            hostBadge.style.padding = '4px 8px';
+            hostBadge.style.borderRadius = '10px';
+            hostBadge.style.marginLeft = 'auto';
+            hostBadge.textContent = '房主';
+            playerCard.appendChild(hostBadge);
+          }
+
+          playerList.appendChild(playerCard);
+        });
+
+        // 更新房间状态
+        const allPlayersHaveColors = players.every(player => playerColorMap[player]);
+        roomStatus.innerHTML = `
+          <div style="background: #f0f8ff; padding: 15px; border-radius: 8px; border-left: 4px solid #2e8b57;">
+            <div style="font-size: 16px; font-weight: bold; color: #2e8b57; margin-bottom: 5px;">
+              房间状态: ${players.length}/6 人 | 颜色选择: ${Object.keys(playerColorMap).length}/${players.length}
+            </div>
+            <div style="color: #666;">
+              房主: ${hostPlayer} | ${players.length >= 2 && allPlayersHaveColors ? '可以开始游戏' : '需要至少2人且所有人都选择颜色'}
+            </div>
+          </div>
+        `;
+
+        // 只有房主能看到开始游戏按钮，且人数>=2且所有人都选择了颜色
+        if (isHost && players.length >= 2 && allPlayersHaveColors) {
+          startGameBtn.style.display = 'inline-block';
+        } else {
+          startGameBtn.style.display = 'none';
+        }
+      }
+    }
+
+    function leaveRoom() {
+      // 先发送退出房间消息到服务器
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: "leave_room" }));
+        
+        // 等待一小段时间让服务器处理退出消息，然后关闭连接
+        setTimeout(() => {
+          if (ws) {
+            ws.close();
+          }
+        }, 100);
+      }
+      
+      // 清除连接状态
+      currentPlayer = null;
+      gameData = null;
+      isHost = false;
+      roomPlayers = [];
+      gameStarted = false;
+      playerColors = {};
+      availableColors = [];
+      selectedColor = null;
+      
+      // 停止心跳检测
+      stopHeartbeat();
+      
+      // 清除本地存储
+      localStorage.removeItem('monopoly_player_name');
+      
+      // 重置UI状态
+      document.getElementById('join-section').style.display = 'block';
+      document.getElementById('leave-section').style.display = 'none';
+      document.getElementById('player-list-container').style.display = 'none';
+      document.getElementById('name').value = '';
+      
+      log("已退出房间");
+    }
+
+    function connect() {
+      const nameInput = document.getElementById('name');
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert('请输入名字');
+        return;
+      }
+      
+      // 检查本地是否已有连接记录
+      const existingConnection = localStorage.getItem('monopoly_player_name');
+      if (existingConnection && existingConnection !== name) {
+        const confirmChange = confirm(`此设备上已有玩家"${existingConnection}"连接。是否要切换到新玩家"${name}"？\n\n注意：切换玩家可能会被服务器拒绝，建议使用不同设备。`);
+        if (!confirmChange) {
+          nameInput.value = existingConnection;
+          return;
+        }
+      }
+      
+      currentPlayer = name;
+      // 动态获取当前主机地址，支持内网访问
+      const host = window.location.hostname || 'localhost';
+      const port = window.location.port || '8000';
+      ws = new WebSocket(`ws://${host}:${port}/ws/${name}`);
+
+      ws.onopen = () => {
+        log("已连接服务器");
+        // 连接成功后记录到本地存储
+        localStorage.setItem('monopoly_player_name', name);
+        
+        // 隐藏加入房间区域，显示退出房间按钮
+        document.getElementById('join-section').style.display = 'none';
+        document.getElementById('leave-section').style.display = 'block';
+        
+        startHeartbeat(); // 启动心跳检测
+      };
+
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        handleMessage(msg);
+      };
+
+      ws.onclose = (event) => {
+        // 根据关闭代码显示不同的错误信息
+        if (event.code === 4001) {
+          alert("连接被拒绝：同一设备只能连接一个角色！\n请使用不同的设备或等待当前连接断开。");
+          localStorage.removeItem('monopoly_player_name');
+          log("连接被拒绝：同一设备只能连接一个角色");
+          // 恢复加入房间界面
+          document.getElementById('join-section').style.display = 'block';
+          document.getElementById('leave-section').style.display = 'none';
+          document.getElementById('player-list-container').style.display = 'none';
+          return;
+        } else if (event.code === 4002) {
+          alert("连接被拒绝：玩家名已存在！\n请使用不同的名字。");
+          log("连接被拒绝：玩家名已存在");
+          // 恢复加入房间界面
+          document.getElementById('join-section').style.display = 'block';
+          document.getElementById('leave-section').style.display = 'none';
+          document.getElementById('player-list-container').style.display = 'none';
+          return;
+        } else if (event.code === 4003) {
+          alert("连接被拒绝：游戏已开始，不允许新玩家加入！\n请等待当前游戏结束后再加入。");
+          log("连接被拒绝：游戏已开始");
+          // 恢复加入房间界面
+          document.getElementById('join-section').style.display = 'block';
+          document.getElementById('leave-section').style.display = 'none';
+          document.getElementById('player-list-container').style.display = 'none';
+          return;
+        }
+        
+        log("连接关闭，准备重连...");
+        stopHeartbeat();
+        
+        // 避免频繁重连，增加延迟
+        if (!isReconnecting) {
+          setTimeout(() => {
+            if (currentPlayer && !isReconnecting) {
+              startReconnect();
+            }
+          }, 2000); // 2秒后开始重连
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket连接错误:", error);
+        log("连接错误");
+        stopHeartbeat();
+      };
+    }
+
+    // 心跳检测变量
+    let heartbeatTimer = null;
+    let reconnectTimer = null;
+    let isReconnecting = false;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+
+    // 启动心跳检测
+    function startHeartbeat() {
+      stopHeartbeat(); // 先停止之前的心跳
+      heartbeatTimer = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({ action: "ping" }));
+          } catch (error) {
+            console.error("心跳发送失败:", error);
+            if (!isReconnecting) {
+              startReconnect();
+            }
+          }
+        }
+      }, 45000); // 延长到45秒发送一次心跳，减少频率
+    }
+
+    // 停止心跳检测
+    function stopHeartbeat() {
+      if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+      }
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
+    }
+
+    // 重连函数
+    function startReconnect() {
+      if (isReconnecting || !currentPlayer) return;
+      
+      isReconnecting = true;
+      stopHeartbeat();
+
+      // 检查本地连接记录是否一致
+      const existingConnection = localStorage.getItem('monopoly_player_name');
+      if (existingConnection !== currentPlayer) {
+        log("检测到玩家名变更，停止重连");
+        isReconnecting = false;
+        return;
+      }
+
+      function attemptReconnect() {
+        if (reconnectAttempts >= maxReconnectAttempts) {
+          log(`重连失败，已达到最大尝试次数 (${maxReconnectAttempts})`);
+          isReconnecting = false;
+          reconnectAttempts = 0;
+          // 重置UI到初始状态
+          document.getElementById('join-section').style.display = 'block';
+          document.getElementById('leave-section').style.display = 'none';
+          document.getElementById('player-list-container').style.display = 'none';
+          localStorage.removeItem('monopoly_player_name');
+          currentPlayer = null;
+          return;
+        }
+
+        reconnectAttempts++;
+        log(`正在尝试重连... (${reconnectAttempts}/${maxReconnectAttempts})`);
+        
+        const host = window.location.hostname || 'localhost';
+        const port = window.location.port || '8000';
+        ws = new WebSocket(`ws://${host}:${port}/ws/${currentPlayer}`);
+
+        ws.onopen = () => {
+          log("重连成功");
+          isReconnecting = false;
+          reconnectAttempts = 0;
+          
+          // 重连成功后也要更新UI状态
+          document.getElementById('join-section').style.display = 'none';
+          document.getElementById('leave-section').style.display = 'block';
+          
+          startHeartbeat();
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            handleMessage(msg);
+          } catch (error) {
+            console.error("消息解析失败:", error);
+          }
+        };
+
+        ws.onclose = (event) => {
+          // 如果是被服务器主动拒绝，不再重连
+          if (event.code === 4001 || event.code === 4002 || event.code === 4003) {
+            log("重连被拒绝，停止尝试");
+            isReconnecting = false;
+            reconnectAttempts = 0;
+            localStorage.removeItem('monopoly_player_name');
+            document.getElementById('join-section').style.display = 'block';
+            document.getElementById('leave-section').style.display = 'none';
+            document.getElementById('player-list-container').style.display = 'none';
+            return;
+          }
+          
+          if (isReconnecting) {
+            // 指数退避策略，避免频繁重连
+            const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
+            log(`重连失败，${delay/1000}秒后再次尝试...`);
+            reconnectTimer = setTimeout(attemptReconnect, delay);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("WebSocket错误:", error);
+        };
+      }
+
+      // 立即开始第一次重连尝试
+      attemptReconnect();
+    }
+
+    // 废弃旧的reconnect函数，用startReconnect替代
+    function reconnect() {
+      startReconnect();
+    }
+
+    function startGame() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      if (!isHost) {
+        alert("只有房主可以开始游戏");
+        return;
+      }
+      if (roomPlayers.length < 2) {
+        alert("至少需要2名玩家才能开始游戏");
+        return;
+      }
+      
+      log("房主正在启动游戏...");
+      ws.send(JSON.stringify({ action: "start_game" }));
+    }
+
+    function rollDice() {
+      if (!gameStarted) {
+        alert("游戏还未开始");
+        return;
+      }
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+
+      // 立即播放掷骰子动画
+      playDiceAnimation();
+
+      ws.send(JSON.stringify({ action: "roll_dice" }));
+    }
+
+    // 新增：播放掷骰子动画的函数
+    function playDiceAnimation() {
+      const dice1 = document.getElementById('dice1');
+      const dice2 = document.getElementById('dice2');
+      
+      // 两个骰子分别做不同的旋转动画，增加随机性
+      dice1.style.transition = "transform 1.5s ease-out";
+      dice1.style.transform = `rotateX(${360 * 3}deg) rotateY(${360 * 4}deg)`;
+      
+      dice2.style.transition = "transform 1.5s ease-out";
+      dice2.style.transform = `rotateX(${360 * 4}deg) rotateY(${360 * 3}deg)`;
+    }
+
+    function buy() {
+      if (!gameStarted) {
+        alert("游戏还未开始");
+        return;
+      }
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      ws.send(JSON.stringify({ action: "buy_property" }));
+    }
+
+    function upgrade() {
+      if (!gameStarted) {
+        alert("游戏还未开始");
+        return;
+      }
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      ws.send(JSON.stringify({ action: "upgrade_property" }));
+    }
+
+    function showFinancialOptions() {
+      if (!gameStarted) {
+        alert("游戏还未开始");
+        return;
+      }
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      ws.send(JSON.stringify({ action: "get_financial_options" }));
+    }
+
+    function endTurn() {
+      if (!gameStarted) {
+        alert("游戏还未开始");
+        return;
+      }
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      
+      // 检查是否有待处理的动作
+      if (gameData && gameData.pending) {
+        const confirmMessage = `您有待处理的动作：${gameData.pending.action}。\n确定要跳过此动作并结束回合吗？`;
+        if (!confirm(confirmMessage)) {
+          return;
+        }
+      }
+      
+      // 发送结束回合请求
+      ws.send(JSON.stringify({ action: "end_turn" }));
+      log("请求结束回合...");
+    }
+
+    function closeFinancialModal() {
+      document.getElementById('financial-modal').style.display = 'none';
+    }
+
+    function mortgageProperty(propertyName) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      ws.send(JSON.stringify({
+        action: "mortgage_property",
+        property_name: propertyName
+      }));
+      closeFinancialModal();
+    }
+
+    function redeemProperty(propertyName) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        alert("未连接服务器");
+        return;
+      }
+      ws.send(JSON.stringify({
+        action: "redeem_property",
+        property_name: propertyName
+      }));
+      closeFinancialModal();
+    }
+
+    function sellProperty(propertyName) {
+      if (confirm(`确定要出售 ${propertyName} 吗？出售后将无法收回！`)) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          alert("未连接服务器");
+          return;
+        }
+        ws.send(JSON.stringify({
+          action: "sell_property",
+          property_name: propertyName
+        }));
+        closeFinancialModal();
+      }
+    }
+
+    function handleMessage(msg) {
+      // 处理心跳响应
+      if (msg.type === "pong") {
+        // 收到心跳响应，连接正常
+        return;
+      }
+
+      // 处理游戏开始消息
+      if (msg.type === "game_started") {
+        log("游戏开始！所有玩家进入游戏界面");
+        // 保存完整的游戏数据
+        gameData = {
+          players: msg.players || [],
+          properties: msg.properties || [],
+          current_player: msg.current_player
+        };
+        showGame();
+        return;
+      }
+
+      // 处理游戏重连消息
+      if (msg.type === "game_reconnect") {
+        log(msg.message || "重新连接到游戏中");
+        // 保存完整的游戏数据
+        gameData = {
+          players: msg.players || [],
+          properties: msg.properties || [],
+          current_player: msg.current_player
+        };
+        showGame();
+        return;
+      }
+
+      // 处理玩家列表更新
+      if (msg.type === "player_list") {
+        updatePlayerList(msg.players, msg.host, msg.player_colors || {}, msg.available_colors || []);
+        return;
+      }
+
+      // 处理颜色选择结果
+      if (msg.type === "color_selected") {
+        log(`成功选择颜色: ${msg.color}`);
+        selectedColor = msg.color;
+        return;
+      }
+
+      if (msg.type === "player_left") {
+        log(`玩家 ${msg.player} 离开游戏`);
+        // 如果游戏还没开始，更新玩家列表
+        if (!gameStarted && msg.remaining_players) {
+          updatePlayerList(msg.remaining_players, msg.new_host);
+        }
+        return;
+      }
+      if (msg.game_over) {
+        log("游戏结束！胜者: " + msg.winner);
+        alert(`游戏结束！胜者是 ${msg.winner}`);
+        return;
+      }
+      if (msg.type === "financial_options") {
+        showFinancialOptionsModal(msg);
+        return;
+      }
+      if (msg.type === "mortgage_result" || msg.type === "redeem_result" || msg.type === "sell_result") {
+        if (msg.events) {
+          msg.events.forEach(e => log("操作: " + e));
+        }
+        if (msg.players) {
+          updatePlayerStats(msg.players);
+        }
+        return;
+      }
+      if (msg.type === "buy_result" || msg.type === "upgrade_result") {
+        if (msg.events) {
+          msg.events.forEach(e => log("操作: " + e));
+        }
+        if (msg.players) {
+          updatePlayerStats(msg.players);
+          gameData = msg;
+        }
+        // 立即重新渲染棋盘，如果有地产数据的话
+        if (msg.properties && msg.players) {
+          renderBoard(msg.players, msg.properties);
+          log(`已更新棋盘显示 - 共${msg.properties.length}个地块`);
+        }
+        // 更新当前玩家显示
+        if (msg.current_player) {
+          updateCurrentPlayer(msg.current_player);
+        }
+        return;
+      }
+      if (msg.type === "turn_ended") {
+        if (msg.events) {
+          msg.events.forEach(e => log("回合: " + e));
+        }
+        if (msg.players) {
+          updatePlayerStats(msg.players);
+          gameData = msg;
+        }
+        if (msg.properties) {
+          renderBoard(msg.players, msg.properties);
+        }
+        // 更新当前玩家显示
+        if (msg.current_player) {
+          updateCurrentPlayer(msg.current_player);
+        }
+        return;
+      }
+      if (msg.type === "error") {
+        log("错误: " + msg.message);
+        alert("错误: " + msg.message);
+        return;
+      }
+      if (msg.player && msg.dice_total !== undefined) {
+        // 如果不是当前玩家掷骰子，也播放动画
+        if (msg.player !== currentPlayer) {
+          playDiceAnimation();
+        }
+
+        // 显示骰子结果信息
+        let diceInfo = `总点数 ${msg.dice_total}`;
+        if (msg.dice_values && msg.dice_values.length === 2) {
+          diceInfo = `骰子1: ${msg.dice_values[0]}, 骰子2: ${msg.dice_values[1]} (总计: ${msg.dice_total})`;
+        }
+        
+        log(`${msg.player} 掷骰子 ${diceInfo}，到达 ${msg.landed_on}`);
+
+        // 延迟显示最终结果，让动画先播放
+        setTimeout(() => {
+          if (msg.dice_values && msg.dice_values.length === 2) {
+            showDiceFace(msg.dice_values[0], msg.dice_values[1]);
+          } else {
+            // 兼容旧格式，当总点数除以2显示两个骰子
+            const avg = Math.ceil(msg.dice_total / 2);
+            showDiceFace(avg, msg.dice_total - avg);
+          }
+        }, 1500);
+
+        msg.events.forEach(e => log("事件: " + e));
+
+        // 处理债务情况
+        if (msg.debt_situation) {
+          const debt = msg.debt_situation;
+          if (debt.can_recover) {
+            log(`⚠️ ${debt.player} 资金不足，需要抵押或出售地块来偿还债务！`);
+            if (debt.player === currentPlayer) {
+              alert(`您资金不足，需要抵押或出售地块来偿还 $${debt.debt} 的债务！`);
+              showFinancialOptions(); // 自动打开财务管理界面
+            }
+          } else {
+            log(`💀 ${debt.player} 已破产！`);
+          }
+        }
+
+        // 不要这里更新当前玩家，因为在下面会统一处理
+        // updateCurrentPlayer(msg.player);
+      }
+      if (msg.pending) {
+        log(`操作提示: ${msg.pending.action} (${msg.pending.property})`);
+      }
+      if (msg.players && msg.properties) {
+        gameData = msg;
+        renderBoard(msg.players, msg.properties);
+        updatePlayerStats(msg.players);
+        
+        // 更新当前玩家显示（如果有的话）
+        if (msg.current_player) {
+          updateCurrentPlayer(msg.current_player);
+        }
+      }
+    }
+
+    function showFinancialOptionsModal(data) {
+      const modal = document.getElementById('financial-modal');
+      const mortgageableList = document.getElementById('mortgageable-list');
+      const redeemableList = document.getElementById('redeemable-list');
+      const sellableList = document.getElementById('sellable-list');
+
+      // 清空列表
+      mortgageableList.innerHTML = '';
+      redeemableList.innerHTML = '';
+      sellableList.innerHTML = '';
+
+      // 填充可抵押地块
+      if (data.mortgageable_properties && data.mortgageable_properties.length > 0) {
+        data.mortgageable_properties.forEach(prop => {
+          const button = document.createElement('button');
+          button.textContent = `${prop.name} (获得 $${prop.mortgage_value})`;
+          button.onclick = () => mortgageProperty(prop.name);
+          button.style.margin = '5px';
+          button.style.backgroundColor = '#4CAF50';
+          button.style.color = 'white';
+          button.style.padding = '5px 10px';
+          button.style.border = 'none';
+          button.style.borderRadius = '3px';
+          mortgageableList.appendChild(button);
+        });
+      } else {
+        mortgageableList.textContent = '无可抵押地块';
+      }
+
+      // 填充可赎回地块
+      if (data.redeemable_properties && data.redeemable_properties.length > 0) {
+        data.redeemable_properties.forEach(prop => {
+          const button = document.createElement('button');
+          button.textContent = `${prop.name} (花费 $${prop.redeem_cost})`;
+          button.onclick = () => redeemProperty(prop.name);
+          button.style.margin = '5px';
+          button.style.backgroundColor = '#2196F3';
+          button.style.color = 'white';
+          button.style.padding = '5px 10px';
+          button.style.border = 'none';
+          button.style.borderRadius = '3px';
+          redeemableList.appendChild(button);
+        });
+      } else {
+        redeemableList.textContent = '无可赎回地块';
+      }
+
+      // 填充可出售地块
+      if (data.sellable_properties && data.sellable_properties.length > 0) {
+        data.sellable_properties.forEach(prop => {
+          const button = document.createElement('button');
+          button.textContent = `${prop.name} (获得 $${prop.sell_value})`;
+          button.onclick = () => sellProperty(prop.name);
+          button.style.margin = '5px';
+          button.style.backgroundColor = '#f44336';
+          button.style.color = 'white';
+          button.style.padding = '5px 10px';
+          button.style.border = 'none';
+          button.style.borderRadius = '3px';
+          sellableList.appendChild(button);
+        });
+      } else {
+        sellableList.textContent = '无可出售地块';
+      }
+
+      modal.style.display = 'block';
+    }
+
+    function showDiceFace(dice1Value, dice2Value) {
+      const dice1 = document.getElementById('dice1');
+      const dice2 = document.getElementById('dice2');
+      
+      const rot1 = diceRotations[dice1Value];
+      const rot2 = diceRotations[dice2Value];
+      
+      dice1.style.transition = "transform 1s ease-out";
+      dice1.style.transform = `rotateX(${rot1.x}deg) rotateY(${rot1.y}deg)`;
+      
+      dice2.style.transition = "transform 1s ease-out";
+      dice2.style.transform = `rotateX(${rot2.x}deg) rotateY(${rot2.y}deg)`;
+    }
+
+    function updateCurrentPlayer(playerName) {
+      const currentPlayerDiv = document.getElementById('current-player');
+      currentPlayerDiv.textContent = `当前玩家: ${playerName}`;
+    }
+
+    function updatePlayerStats(players) {
+      const statsDiv = document.getElementById('player-stats');
+      statsDiv.innerHTML = '<h4>玩家状态</h4>';
+      players.forEach((player, index) => {
+        const playerDiv = document.createElement('div');
+        playerDiv.className = 'player-stat';
+        // 使用玩家选择的颜色，如果没有则使用预定义颜色
+        const playerColor = playerColors[player.name] || predefinedColors[index] || '#cccccc';
+        playerDiv.style.borderLeft = `4px solid ${playerColor}`;
+        playerDiv.innerHTML = `
+        <span><strong>${player.name}</strong></span>
+        <span>$${player.money}</span>
+      `;
+        statsDiv.appendChild(playerDiv);
+      });
+    }
+
+    function renderBoard(players, properties) {
+      // 清除现有的地块元素（保留中央区域）
+      const existingTiles = document.querySelectorAll('.tile, .corner-tile');
+      existingTiles.forEach(tile => tile.remove());
+
+      const board = document.getElementById('board');
+
+      // 创建地块
+      boardPositions.forEach((boardPos, i) => {
+        const property = properties[i] || { name: boardPos.name, cost: 0, owner: null, houses: 0 };
+
+        const div = document.createElement('div');
+        div.className = boardPos.pos;
+        div.setAttribute('data-position', i);
+
+        // 设置背景颜色
+        if (property.owner) {
+          const ownerIndex = players.findIndex(p => p.name === property.owner);
+          const ownerColor = playerColors[property.owner] || predefinedColors[ownerIndex] || '#cccccc';
+          div.style.background = `linear-gradient(145deg, ${ownerColor}, ${ownerColor}88)`;
+        } else if (boardPos.special) {
+          div.style.background = 'linear-gradient(45deg, #ffd700, #ffed4e)';
+        } else {
+          div.style.background = 'linear-gradient(145deg, #ffffff, #f0f0f0)';
+        }
+
+        // 创建地块内容
+        div.innerHTML = `
+        <div class="property-name">${property.name}</div>
+        <div class="property-info">
+          ${property.cost > 0 ? `<div class="property-price">$${Array.isArray(property.cost) ? property.cost[0] : property.cost}</div>` : ''}
+          ${property.owner ? `<div style="color: #e74c3c;">拥有者: ${property.owner}</div>` : ''}
+          ${property.is_mortgaged ? `<div style="color: #ff9800; font-weight: bold;">已抵押</div>` : ''}
+        </div>
+        ${property.houses > 0 ? `<div class="houses-indicator">🏠×${property.houses}</div>` : ''}
+      `;
+
+        // 添加玩家标记
+        const playersHere = players ? players.filter(p => p.position === i) : [];
+        if (playersHere.length > 0) {
+          const playerToken = document.createElement('div');
+          playerToken.className = 'player-token';
+          playerToken.innerHTML = playersHere.map((p, idx) => {
+            const playerIndex = players.findIndex(player => player.name === p.name);
+            const playerColor = playerColors[p.name] || predefinedColors[playerIndex] || '#cccccc';
+            return `<span style="color: ${playerColor};">●</span>`;
+          }).join('');
+          div.appendChild(playerToken);
+        }
+
+        board.appendChild(div);
+      });
+    }
+
+    // 初始化棋盘 - 页面加载时就显示棋盘
+    function initializeBoard() {
+      const defaultProperties = boardPositions.map((pos, index) => ({
+        name: pos.name,
+        cost: pos.prices,
+        owner: null,
+        houses: 0
+      }));
+
+      renderBoard([], defaultProperties);
+    }
+
+    // 页面加载完成后的初始化
+    window.addEventListener('DOMContentLoaded', async function () {
+      // 显示房间等待页面
+      showLobby();
+      
+      // 先加载棋盘数据
+      await loadBoardData();
+      
+      // 检查是否有保存的玩家名
+      const savedPlayerName = localStorage.getItem('monopoly_player_name');
+      if (savedPlayerName) {
+        const nameInput = document.getElementById('name');
+        nameInput.value = savedPlayerName;
+        // 显示提示信息
+        const joinSection = document.getElementById('join-section');
+        const existingPlayerHint = document.createElement('div');
+        existingPlayerHint.style.color = '#e67e22';
+        existingPlayerHint.style.fontSize = '14px';
+        existingPlayerHint.style.marginBottom = '10px';
+        existingPlayerHint.innerHTML = `⚠️ 检测到此设备上次连接的玩家名："${savedPlayerName}"<br>如需使用新名字，请先清除原有记录`;
+        
+        const clearButton = document.createElement('button');
+        clearButton.textContent = '清除记录';
+        clearButton.style.marginLeft = '10px';
+        clearButton.style.padding = '5px 10px';
+        clearButton.style.fontSize = '12px';
+        clearButton.style.background = '#e74c3c';
+        clearButton.style.color = 'white';
+        clearButton.style.border = 'none';
+        clearButton.style.borderRadius = '4px';
+        clearButton.style.cursor = 'pointer';
+        clearButton.onclick = () => {
+          localStorage.removeItem('monopoly_player_name');
+          nameInput.value = '';
+          existingPlayerHint.remove();
+          // 确保UI状态正确
+          document.getElementById('join-section').style.display = 'block';
+          document.getElementById('leave-section').style.display = 'none';
+          document.getElementById('player-list-container').style.display = 'none';
+          log("已清除本地连接记录");
+        };
+        
+        existingPlayerHint.appendChild(clearButton);
+        joinSection.insertBefore(existingPlayerHint, joinSection.firstChild);
+      }
+    });
+
+    // 页面可见性变化处理
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        // 页面变为可见时，检查连接状态
+        if (ws && ws.readyState !== WebSocket.OPEN && currentPlayer && !isReconnecting) {
+          log("页面重新激活，检查连接...");
+          startReconnect();
+        }
+      }
+    });
+
+    // 防止页面意外关闭时的清理
+    window.addEventListener('beforeunload', function () {
+      stopHeartbeat();
+      isReconnecting = false;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        // 尝试发送退出消息
+        try {
+          ws.send(JSON.stringify({ action: "leave_room" }));
+        } catch (error) {
+          console.error("发送退出消息失败:", error);
+        }
+        ws.close();
+      }
+    });
+  </script>
+
+</body>
+
+</html>

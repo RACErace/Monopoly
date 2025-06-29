@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大富翁游戏 - 连接监控</title>
+    <style>
+        body {
+            font-family: "微软雅黑", sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background: #2e8b57;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .history {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .history-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .history-item:hover {
+            background: #f9f9f9;
+        }
+        .type-连接成功 { color: #4CAF50; }
+        .type-连接断开 { color: #f44336; }
+        .type-连接拒绝 { color: #ff9800; }
+        .type-主动退出 { color: #2196F3; }
+        .type-警告 { color: #ff5722; }
+        
+        .players-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .player-badge {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 8px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+            border: 1px solid #1976d2;
+        }
+        .player-badge.host {
+            background: #fff3e0;
+            color: #f57c00;
+            border-color: #f57c00;
+        }
+        
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        button {
+            background: #2e8b57;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #1e5f3a;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        /* 管理员面板样式 */
+        .admin-panel {
+            border-left: 4px solid #e74c3c;
+        }
+        .admin-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .admin-button {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .admin-button:hover {
+            background: #c0392b;
+        }
+        .admin-button.danger {
+            background: #d32f2f;
+        }
+        .admin-button.danger:hover {
+            background: #b71c1c;
+        }
+        .player-admin {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .kick-button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .kick-button:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 大富翁游戏连接监控 🎲</h1>
+        
+        <div class="auto-refresh">
+            <label>
+                <input type="checkbox" id="autoRefresh" checked> 自动刷新 (5秒)
+            </label>
+            <button onclick="refreshData()">立即刷新</button>
+            <button onclick="clearHistory()">清除历史</button>
+            <button onclick="toggleAdminPanel()" id="adminToggle">显示管理员面板</button>
+            <span id="lastUpdate"></span>
+        </div>
+
+        <div class="card admin-panel" id="adminPanel" style="display: none;">
+            <h3>🔒 管理员控制面板</h3>
+            <p style="color: #e74c3c; font-size: 14px;">⚠️ 请谨慎使用管理员功能，这些操作将影响所有玩家！</p>
+            
+            <div style="margin-bottom: 20px;">
+                <h4>服务器状态</h4>
+                <div id="serverStatus" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px;">
+                    <!-- 服务器状态将通过JS填充 -->
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4>全局操作</h4>
+                <div class="admin-actions">
+                    <button class="admin-button danger" onclick="resetGame()">重置游戏状态</button>
+                    <button class="admin-button" onclick="refreshData()">强制刷新数据</button>
+                    <button class="admin-button" onclick="window.open('/admin/status', '_blank')">查看API状态</button>
+                </div>
+            </div>
+            
+            <div>
+                <h4>玩家管理</h4>
+                <div id="adminPlayersList">
+                    <!-- 管理员玩家列表将通过JS填充 -->
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>实时状态</h3>
+            <div class="status" id="status">
+                <!-- 状态将通过JS填充 -->
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>在线玩家</h3>
+            <div class="players-list" id="playersList">
+                <!-- 玩家列表将通过JS填充 -->
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>连接历史 (最近50条)</h3>
+            <div class="history" id="history">
+                <!-- 历史记录将通过JS填充 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshTimer = null;
+        let adminPanelVisible = false;
+
+        // 切换管理员面板显示
+        function toggleAdminPanel() {
+            const panel = document.getElementById('adminPanel');
+            const toggle = document.getElementById('adminToggle');
+            
+            adminPanelVisible = !adminPanelVisible;
+            panel.style.display = adminPanelVisible ? 'block' : 'none';
+            toggle.textContent = adminPanelVisible ? '隐藏管理员面板' : '显示管理员面板';
+        }
+
+        // 踢出玩家
+        async function kickPlayer(playerName) {
+            if (confirm(`确定要踢出玩家 "${playerName}" 吗？\n\n该玩家将被强制断开连接。`)) {
+                try {
+                    const response = await fetch(`/admin/kick/${playerName}`, { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(`成功踢出玩家: ${result.message}`);
+                        await refreshData();
+                    } else {
+                        alert(`踢出失败: ${result.error}`);
+                    }
+                } catch (error) {
+                    alert('踢出玩家失败: ' + error.message);
+                }
+            }
+        }
+
+        // 重置游戏状态
+        async function resetGame() {
+            if (confirm('⚠️ 确定要重置游戏状态吗？\n\n这将：\n• 断开所有玩家连接\n• 清除游戏数据\n• 重置房主设置\n\n此操作不可撤销！')) {
+                try {
+                    const response = await fetch('/admin/reset', { 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(`游戏状态已重置: ${result.message}`);
+                        await refreshData();
+                    } else {
+                        alert(`重置失败: ${result.error}`);
+                    }
+                } catch (error) {
+                    alert('重置游戏失败: ' + error.message);
+                }
+            }
+        }
+
+        async function fetchConnectionData() {
+            try {
+                const response = await fetch('/admin/connections');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('获取连接数据失败:', error);
+                return null;
+            }
+        }
+
+        function updateStatus(data) {
+            const statusDiv = document.getElementById('status');
+            const conn = data.current_connections;
+            const stats = data.statistics;
+            
+            statusDiv.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${conn.total}</div>
+                    <div class="stat-label">当前连接</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.active_ips.length}</div>
+                    <div class="stat-label">活跃IP</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.recent_connects}</div>
+                    <div class="stat-label">最近连接</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.recent_disconnects}</div>
+                    <div class="stat-label">最近断开</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${conn.game_started ? '进行中' : '等待中'}</div>
+                    <div class="stat-label">游戏状态</div>
+                </div>
+            `;
+        }
+
+        function updatePlayersList(data) {
+            const playersDiv = document.getElementById('playersList');
+            const conn = data.current_connections;
+            
+            if (conn.players.length === 0) {
+                playersDiv.innerHTML = '<div style="color: #666; font-style: italic;">暂无在线玩家</div>';
+                return;
+            }
+            
+            playersDiv.innerHTML = conn.players.map(player => {
+                const isHost = player === conn.host_player;
+                const ip = conn.player_ips[player] || 'unknown';
+                return `<div class="player-badge ${isHost ? 'host' : ''}" title="IP: ${ip}">
+                    ${player} ${isHost ? '(房主)' : ''}
+                </div>`;
+            }).join('');
+        }
+
+        function updateAdminPlayersList(data) {
+            const adminPlayersDiv = document.getElementById('adminPlayersList');
+            const conn = data.current_connections;
+            
+            if (conn.players.length === 0) {
+                adminPlayersDiv.innerHTML = '<div style="color: #666; font-style: italic;">暂无在线玩家</div>';
+                return;
+            }
+            
+            adminPlayersDiv.innerHTML = conn.players.map(player => {
+                const isHost = player === conn.host_player;
+                const ip = conn.player_ips[player] || 'unknown';
+                return `<div class="player-admin">
+                    <div class="player-info">
+                        <strong>${player}</strong>
+                        ${isHost ? '<span style="color: #f57c00; font-size: 12px;">(房主)</span>' : ''}
+                        <span style="color: #666; font-size: 12px;">IP: ${ip}</span>
+                    </div>
+                    <button class="kick-button" onclick="kickPlayer('${player}')">踢出</button>
+                </div>`;
+            }).join('');
+        }
+
+        function updateServerStatus(data) {
+            const serverStatusDiv = document.getElementById('serverStatus');
+            const conn = data.current_connections;
+            const stats = data.statistics;
+            
+            serverStatusDiv.innerHTML = `
+                游戏状态: ${conn.game_started ? '<span style="color: #4CAF50;">进行中</span>' : '<span style="color: #ff9800;">等待中</span>'}
+                <br>房主: ${conn.host_player || '<span style="color: #666;">无</span>'}
+                <br>总连接数: ${conn.total}
+                <br>活跃IP数: ${stats.active_ips.length}
+                <br>历史事件: ${stats.total_events}
+                <br>活跃IP列表: ${stats.active_ips.join(', ') || '无'}
+            `;
+        }
+
+        function updateHistory(data) {
+            const historyDiv = document.getElementById('history');
+            const history = data.connection_history;
+            
+            if (history.length === 0) {
+                historyDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">暂无连接历史</div>';
+                return;
+            }
+            
+            historyDiv.innerHTML = history.slice().reverse().map(event => {
+                const typeClass = `type-${event.type}`;
+                return `<div class="history-item ${typeClass}">
+                    [${event.timestamp}] 
+                    <strong>${event.type}</strong> - 
+                    ${event.player} 
+                    ${event.details ? `| ${event.details}` : ''} 
+                    ${event.client_ip && event.client_ip !== 'unknown' ? `| IP: ${event.client_ip}` : ''} 
+                    | 连接数: ${event.total_connections}
+                </div>`;
+            }).join('');
+        }
+
+        async function refreshData() {
+            const data = await fetchConnectionData();
+            if (data) {
+                updateStatus(data);
+                updatePlayersList(data);
+                updateAdminPlayersList(data);
+                updateServerStatus(data);
+                updateHistory(data);
+                
+                const now = new Date().toLocaleTimeString();
+                document.getElementById('lastUpdate').textContent = `最后更新: ${now}`;
+            } else {
+                document.getElementById('lastUpdate').textContent = '更新失败';
+            }
+        }
+
+        function startAutoRefresh() {
+            if (autoRefreshTimer) return;
+            
+            autoRefreshTimer = setInterval(async () => {
+                const checkbox = document.getElementById('autoRefresh');
+                if (checkbox.checked) {
+                    await refreshData();
+                }
+            }, 5000);
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+            }
+        }
+
+        async function clearHistory() {
+            alert('历史记录清除功能暂时不可用。\n\n如需清除历史记录，请使用管理员面板的"重置游戏状态"功能。');
+        }
+
+        // 页面加载时启动
+        document.addEventListener('DOMContentLoaded', async () => {
+            await refreshData();
+            startAutoRefresh();
+            
+            // 监听自动刷新开关
+            document.getElementById('autoRefresh').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+        });
+
+        // 页面可见性变化时暂停/恢复自动刷新
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoRefresh();
+            } else {
+                const checkbox = document.getElementById('autoRefresh');
+                if (checkbox.checked) {
+                    startAutoRefresh();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
