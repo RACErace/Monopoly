@@ -220,7 +220,7 @@ async def websocket_endpoint(websocket: WebSocket, player_name: str):
                         continue
                     
                     d1, d2 = game.roll_dice()
-                    result = game.play_turn_network(1)
+                    result = game.play_turn_network(d1 + d2)
                     
                     # 检查是否有错误
                     if "error" in result:

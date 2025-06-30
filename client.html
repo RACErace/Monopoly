@@ -808,7 +808,7 @@
       "从银行错误中收取 $200": "🏖️",
       "学校税 $150": "🥈",
       "房屋维修，每栋房屋 $40": "💹",
-      "1": "❤️" ,
+      "1": "❤️",
       "2": "🏛️",
       "3": "👨‍⚕️",
       "4": "📊",
@@ -1022,7 +1022,7 @@
       } else {
         initializeBoard();
       }
-      
+
       // 更新掷骰子按钮状态
       updateDiceButtonState();
     }
@@ -1413,13 +1413,13 @@
         alert("未连接服务器");
         return;
       }
-      
+
       // 检查是否轮到当前玩家
       if (gameData && gameData.current_player !== currentPlayer) {
         alert("不是您的回合");
         return;
       }
-      
+
       // 检查是否已经掷过骰子
       if (gameData && gameData.has_rolled_this_turn) {
         alert("本回合已经掷过骰子，请完成当前操作或结束回合");
@@ -1950,18 +1950,18 @@
     function updateCurrentPlayer(playerName) {
       const currentPlayerDiv = document.getElementById('current-player');
       currentPlayerDiv.textContent = `当前玩家: ${playerName}`;
-      
+
       // 更新掷骰子按钮状态
       updateDiceButtonState();
     }
-    
+
     function updateDiceButtonState() {
       const rollButton = document.querySelector('button[onclick="rollDice()"]');
       if (!rollButton) return;
-      
+
       const isMyTurn = gameData && gameData.current_player === currentPlayer;
       const hasRolled = gameData && gameData.has_rolled_this_turn;
-      
+
       if (!isMyTurn) {
         rollButton.disabled = true;
         rollButton.textContent = "掷骰子 (不是您的回合)";

@@ -231,11 +231,11 @@ class Board:
                  "country32":{"cost": [32, 33, 34, 35], "rent": [32, 33, 34, 35], "mortgage_value": 1, "selling_price": 2},
                  "country33":{"cost": [33, 34, 35, 36], "rent": [33, 34, 35, 36], "mortgage_value": 1, "selling_price": 2},
                  "country34":{"cost": [34, 35, 36, 37], "rent": [34, 35, 36, 37], "mortgage_value": 1, "selling_price": 2}}
-        self.game_map = ["起点", "机遇", "机遇", "机遇", "机遇",
-                "机遇", "机遇", "机遇", "机遇", "机遇",
+        self.game_map = ["起点", "country", "country", "country", "country",
+                "country", "country", "机遇", "country", "country",
                 "country8", "机遇", "country9", "country10", "country11",
                 "country12", "country13", "country14", "country15",
-                "country16", "country17", "country18", "country19",
+                "country16", "命运", "country18", "country19",
                 "country20", "country21", "country22", "country23","命运"]
         self.tiles = []
         for tile_name in self.game_map:
